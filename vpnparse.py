@@ -10,6 +10,7 @@ import csv
 import os
 import rich.progress
 from rich.progress import Progress
+import datetime
 
 #command line arguments parsing
 parser = argparse.ArgumentParser(description="Process IP addresses from CSV.")
@@ -157,13 +158,23 @@ def fetch_local_service(ip):
 
 #write ip addresses to CSV file
 def write_to_csv(processed_ips):
-    with open('local_data.csv', 'a', newline='') as file:
-        writer = csv.writer(file)
-        if os.path.getsize('local_data.csv') == 0: #only write header if file is empty
-            writer.writerow(['IP', 'Service'])
+    report_file = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S_report.csv")
+    with open(report_file, 'w', newline='') as report:
+        writer = csv.writer(report)
+        writer.writerow(['IP', 'Service'])
         for ip, service in processed_ips.items():
-            if not ip_in_local_data(ip):
-                writer.writerow([ip, service])
+            writer.writerow([ip, service])
+    append_to_local(report_file)
+
+
+def append_to_local(report_file):
+    with open(report_file, 'r', newline='') as report, open('local_data.csv', 'a', newline='') as local_data:
+        reader = csv.reader(report)
+        writer = csv.writer(local_data)
+        next(reader) # skips header ?
+        for row in reader:
+            writer.writerow(row)
+
 
 #main
 def main(csv_file, dc_file, vpn_file):
